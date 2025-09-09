@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chấm bài nhanh - Giáo viên Toán</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script></head>
+  <body class="font-inter antialiased bg-[#0B0D12] text-slate-200 selection:bg-blue-500/20 selection:text-slate-100">
+    <!-- App wrapper -->
+    <div id="app" class="min-h-screen">
+      <!-- Screen: Upload (Phase 1) -->
+      <section id="screen-upload" class="min-h-screen flex items-center justify-center px-6">
+        <div class="w-full max-w-2xl text-center">
+          <div class="mx-auto mb-8 w-16 h-16 rounded-2xl bg-white/5 ring-1 ring-white/10 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-7 h-7 text-blue-400"></i>
+          </div>
+          <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-100">Bắt đầu chấm bài</h1>
+          <p class="mt-3 text-slate-400">Tải lên tất cả ảnh bài làm của một lớp để hệ thống tự nhóm và gợi ý chấm điểm.</p>
+
+          <div class="mt-8">
+            <button id="btn-start-upload" class="inline-flex items-center gap-2 rounded-xl bg-blue-500/90 hover:bg-blue-500 text-white px-6 py-3 md:px-8 md:py-4 shadow-sm shadow-blue-900/30 ring-1 ring-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition">
+              <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+              <span class="text-base md:text-lg font-medium">Bắt đầu chấm bài</span>
+            </button>
+            <input id="file-input" type="file" accept="image/*,application/pdf" multiple class="hidden" />
+          </div>
+
+          <div id="session-meta" class="mt-8 hidden">
+            <div class="mx-auto max-w-xl rounded-2xl bg-white/[0.03] ring-1 ring-white/10 p-5 text-left">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-slate-300">
+                  <i data-lucide="images" class="w-5 h-5 text-slate-400"></i>
+                  <span id="file-count" class="text-sm">Đã chọn 0 tệp</span>
+                </div>
+                <button id="btn-change-files" class="text-sm text-slate-300 hover:text-slate-100 inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/5 transition">
+                  <i data-lucide="folder-open" class="w-4 h-4"></i>
+                  Chọn lại
+                </button>
+              </div>
+
+              <div class="mt-4">
+                <label for="session-name" class="block text-sm text-slate-300 mb-2">Tên Lớp học / Bài kiểm tra</label>
+                <input id="session-name" type="text" placeholder="Ví dụ: Lớp 10A - Kiểm tra 15 phút" class="w-full rounded-xl bg-[#0F141C] text-slate-100 placeholder:text-slate-500 ring-1 ring-white/10 focus:ring-2 focus:ring-blue-500 outline-none px-4 py-3" />
+              </div>
+
+              <div class="mt-5 flex items-center justify-between">
+                <p class="text-xs text-slate-500">Mẹo: Giữ Shift để chọn nhanh tất cả ảnh trong thư mục.</p>
+                <button id="btn-upload-grade" class="inline-flex items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-500/90 text-white px-4 py-2.5 shadow-sm shadow-blue-900/30 ring-1 ring-white/10 disabled:opacity-40 disabled:pointer-events-none transition">
+                  <i data-lucide="cpu" class="w-4 h-4"></i>
+                  <span>Tải lên và Chấm bài</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen: Progress -->
+      <section id="screen-progress" class="hidden min-h-screen flex items-center justify-center px-6">
+        <div class="w-full max-w-2xl text-center">
+          <div class="mx-auto mb-8 w-16 h-16 rounded-2xl bg-white/5 ring-1 ring-white/10 flex items-center justify-center">
+            <i data-lucide="scan-line" class="w-7 h-7 text-blue-400"></i>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-semibold tracking-tight text-slate-100">Đang xử lý bài làm…</h2>
+          <p class="mt-3 text-slate-400">AI đang đọc và phân nhóm các bài ( <span id="progress-counter">0</span>/<span id="progress-total">0</span> )</p>
+
+          <div class="mt-6">
+            <div class="w-full h-3 bg-white/5 rounded-full ring-1 ring-white/10 overflow-hidden">
+              <div id="progress-bar" class="h-full w-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-sky-400 transition-[width] duration-500"></div>
+            </div>
+            <div id="progress-steps" class="mt-4 text-sm text-slate-400">
+              • Trích xuất chữ viết • Nhận diện bước tính • Gom nhóm đáp án • Áp dụng tiêu chí chấm
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen: Dashboard (Phase 2) -->
+      <section id="screen-dashboard" class="hidden min-h-screen px-6 py-8">
+        <div class="mx-auto max-w-6xl">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-white/5 ring-1 ring-white/10 flex items-center justify-center">
+                <span class="text-slate-200 font-semibold tracking-tight">GV</span>
+              </div>
+              <div>
+                <h3 id="dash-session" class="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">Phiên chấm</h3>
+                <p class="text-xs text-slate-500">Đã phân nhóm theo mẫu câu trả lời • 30 bài</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-export-dashboard" class="inline-flex items-center gap-2 rounded-xl bg-blue-500/60 hover:bg-blue-500 text-white px-4 py-2.5 ring-1 ring-white/10 shadow-sm shadow-blue-900/30 disabled:opacity-40 disabled:pointer-events-none transition">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Xuất tất cả bài đã chấm</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Group cards -->
+            <div class="group-card cursor-pointer rounded-2xl bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/20 transition p-4" data-group-id="g1" data-type="handwriting" data-count="3" data-status="attention">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center gap-1.5 text-xs text-orange-300 bg-orange-400/10 ring-1 ring-orange-400/30 px-2.5 py-1 rounded-full">
+                    <i data-lucide="highlighter" class="w-3.5 h-3.5"></i>
+                    Cần xác nhận chữ viết
+                  </span>
+                </div>
+                <span class="text-slate-400 text-sm">3 bài</span>
+              </div>
+              <h4 class="mt-3 text-slate-100 font-medium tracking-tight">Mơ hồ chữ số tại bước 3</h4>
+              <p class="text-sm text-slate-400 mt-1">AI chưa chắc là số 4 hay 9</p>
+            </div>
+
+            <div class="group-card cursor-pointer rounded-2xl bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/20 transition p-4" data-group-id="g2" data-type="logic" data-count="8" data-status="review">
+              <div class="flex items-start justify-between">
+                <span class="inline-flex items-center gap-1.5 text-xs text-amber-300 bg-amber-400/10 ring-1 ring-amber-400/30 px-2.5 py-1 rounded-full">
+                  <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                  Cần bạn xem lại
+                </span>
+                <span class="text-slate-400 text-sm">8 bài</span>
+              </div>
+              <h4 class="mt-3 text-slate-100 font-medium tracking-tight">Dùng công thức thay thế</h4>
+              <p class="text-sm text-slate-400 mt-1">Có thể là cách làm hợp lệ</p>
+            </div>
+
+            <div class="group-card cursor-pointer rounded-2xl bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/20 transition p-4" data-group-id="g3" data-type="logic" data-count="4" data-status="review">
+              <div class="flex items-start justify-between">
+                <span class="inline-flex items-center gap-1.5 text-xs text-amber-300 bg-amber-400/10 ring-1 ring-amber-400/30 px-2.5 py-1 rounded-full">
+                  <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                  Cần bạn xem lại
+                </span>
+                <span class="text-slate-400 text-sm">4 bài</span>
+              </div>
+              <h4 class="mt-3 text-slate-100 font-medium tracking-tight">Làm tròn khác chuẩn</h4>
+              <p class="text-sm text-slate-400 mt-1">Sai khác nhỏ do quy ước</p>
+            </div>
+
+            <div class="group-card cursor-pointer rounded-2xl bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/20 transition p-4" data-group-id="g4" data-type="ready" data-count="12" data-status="ready">
+              <div class="flex items-start justify-between">
+                <span class="inline-flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-400/10 ring-1 ring-emerald-400/30 px-2.5 py-1 rounded-full">
+                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                  Đã sẵn sàng
+                </span>
+                <span class="text-slate-400 text-sm">12 bài</span>
+              </div>
+              <h4 class="mt-3 text-slate-100 font-medium tracking-tight">Đáp án đúng phổ biến</h4>
+              <p class="text-sm text-slate-400 mt-1">Khớp hoàn toàn tiêu chí</p>
+            </div>
+
+            <div class="group-card cursor-pointer rounded-2xl bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/20 transition p-4" data-group-id="g5" data-type="ready" data-count="1" data-status="ready">
+              <div class="flex items-start justify-between">
+                <span class="inline-flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-400/10 ring-1 ring-emerald-400/30 px-2.5 py-1 rounded-full">
+                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                  Đã sẵn sàng
+                </span>
+                <span class="text-slate-400 text-sm">1 bài</span>
+              </div>
+              <h4 class="mt-3 text-slate-100 font-medium tracking-tight">Cách giải độc đáo</h4>
+              <p class="text-sm text-slate-400 mt-1">Đúng, trình bày khác</p>
+            </div>
+
+            <div class="group-card cursor-pointer rounded-2xl bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/20 transition p-4" data-group-id="g6" data-type="ready" data-count="2" data-status="ready">
+              <div class="flex items-start justify-between">
+                <span class="inline-flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-400/10 ring-1 ring-emerald-400/30 px-2.5 py-1 rounded-full">
+                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                  Đã sẵn sàng
+                </span>
+                <span class="text-slate-400 text-sm">2 bài</span>
+              </div>
+              <h4 class="mt-3 text-slate-100 font-medium tracking-tight">Thiếu ký hiệu đơn vị</h4>
+              <p class="text-sm text-slate-400 mt-1">Đã tự động nhắc</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen: Canvas (Phase 3) -->
+      <section id="screen-canvas" class="hidden min-h-screen px-6 py-6">
+        <div class="mx-auto max-w-7xl">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <button id="btn-back-dashboard" class="inline-flex items-center gap-2 text-slate-300 hover:text-slate-100 px-3 py-2 rounded-lg hover:bg-white/5 ring-1 ring-white/10 transition">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span class="text-sm">Quay lại</span>
+              </button>
+              <div class="w-px h-6 bg-white/10 mx-1"></div>
+              <div id="group-badge" class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ring-1"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button class="inline-flex items-center gap-2 text-slate-300 hover:text-slate-100 px-3 py-2 rounded-lg hover:bg-white/5 ring-1 ring-white/10 transition">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                <span class="text-sm">Tiêu chí chấm</span>
+              </button>
+              <button class="inline-flex items-center gap-2 text-slate-300 hover:text-slate-100 px-3 py-2 rounded-lg hover:bg-white/5 ring-1 ring-white/10 transition">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span class="text-sm">Xem nhóm</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Workflow stepper: 1) Xác nhận chữ viết 2) Logic 3) Duyệt -->
+          <div id="workflow-stepper" class="mt-4">
+            <div class="flex items-center gap-3">
+              <div id="wf-step1" class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full ring-1 ring-white/15 bg-white/5 text-slate-300 flex items-center justify-center text-xs font-medium">1</div>
+                <div class="text-xs text-slate-400">Xác nhận chữ viết</div>
+              </div>
+              <div class="flex-1 h-px bg-white/10"></div>
+              <div id="wf-step2" class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full ring-1 ring-white/15 bg-white/5 text-slate-300 flex items-center justify-center text-xs font-medium">2</div>
+                <div class="text-xs text-slate-400">Kiểm tra logic</div>
+              </div>
+              <div class="flex-1 h-px bg-white/10"></div>
+              <div id="wf-step3" class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full ring-1 ring-white/15 bg-white/5 text-slate-300 flex items-center justify-center text-xs font-medium">3</div>
+                <div class="text-xs text-slate-400">Duyệt lần cuối</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left: Image + overlay -->
+            <div class="lg:col-span-7">
+              <div class="relative rounded-2xl bg-black/20 ring-1 ring-white/10 overflow-hidden">
+                <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(40,120,255,0.06),transparent_50%)]"></div>
+                <img id="paper-image" src="https://images.unsplash.com/photo-1529078155058-5d716f45d604?q=80&w=1200&auto=format&fit=crop" alt="Bài làm của học sinh" class="w-full h-[62vh] object-contain bg-[#0F141C]" />
+                <!-- Handwriting hotspot -->
+                <button id="hotspot" class="absolute hidden -translate-x-1/2 -translate-y-1/2 left-[58%] top-[42%]">
+                  <span class="absolute inset-0 -z-10 rounded-full bg-orange-500/30 animate-ping"></span>
+                  <span class="w-8 h-8 rounded-full bg-orange-500/80 ring-4 ring-orange-300/30 shadow shadow-orange-900/40"></span>
+                </button>
+
+                <!-- Popover: 4 or 9 -->
+                <div id="hotspot-popover" class="absolute hidden left-[58%] top-[42%] translate-x-4 -translate-y-1/2">
+                  <div class="w-72 rounded-xl bg-[#0F141C] ring-1 ring-white/10 shadow-xl p-4">
+                    <div class="flex items-center gap-2 text-sm text-slate-300">
+                      <i data-lucide="help-circle" class="w-4 h-4 text-orange-300"></i>
+                      Đây là số 4 hay số 9?
+                    </div>
+                    <div class="mt-3 grid grid-cols-2 gap-2">
+                      <button data-choice="4" class="choice-digit inline-flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-slate-200 py-2.5 transition">4</button>
+                      <button data-choice="9" class="choice-digit inline-flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-slate-200 py-2.5 transition">9</button>
+                    </div>
+                    <p class="mt-2 text-[11px] text-slate-500">Chọn một phương án, hệ thống sẽ tự cập nhật điểm và nhận xét.</p>
+                  </div>
+                </div>
+              </div>
+              <!-- Footer info -->
+              <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+                <span id="student-name">Nguyễn Văn A • 3/30</span>
+                <span id="canvas-hint">Gợi ý: Nhấn vùng cam để xác nhận chữ viết</span>
+              </div>
+            </div>
+
+            <!-- Right: Steps & comments -->
+            <div class="lg:col-span-5">
+              <div class="rounded-2xl bg-white/[0.03] ring-1 ring-white/10 p-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="text-slate-100 font-medium tracking-tight">Chấm theo bước</h4>
+                    <p class="text-xs text-slate-500">Cập nhật theo thời gian thực</p>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-sm text-slate-300">Điểm tạm tính</div>
+                    <div id="score-total" class="text-xl font-semibold tracking-tight text-slate-100">7 / 10</div>
+                  </div>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                  <!-- Step 1 -->
+                  <div class="rounded-xl bg-[#0F141C] ring-1 ring-white/10 p-3">
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1 text-xs text-emerald-300 bg-emerald-400/10 ring-1 ring-emerald-400/30 px-2 py-0.5 rounded-full">
+                          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                          Đúng
+                        </span>
+                        <div class="text-sm text-slate-200">Bước 1: Thiết lập phương trình</div>
+                      </div>
+                      <div class="text-sm text-slate-300">2 điểm</div>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-400">Trình bày rõ ràng, ký hiệu chuẩn.</p>
+                  </div>
+
+                  <!-- Step 2 (Logic review case) -->
+                  <div id="step2-card" class="rounded-xl bg-[#0F141C] ring-1 ring-white/10 p-3">
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-2">
+                        <span id="step2-badge" class="inline-flex items-center gap-1 text-xs text-amber-300 bg-amber-400/10 ring-1 ring-amber-400/30 px-2 py-0.5 rounded-full">
+                          <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                          Cần xem lại
+                        </span>
+                        <div class="text-sm text-slate-200">Bước 2: Áp dụng công thức</div>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button id="step2-menu" class="text-slate-300 hover:text-slate-100 px-2 py-1 rounded-md hover:bg-white/5 ring-1 ring-white/10 transition inline-flex items-center gap-1">
+                          <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                          <span class="text-xs">Tùy chọn</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div id="step2-content" class="mt-2 text-xs text-slate-400">
+                      Sai khái niệm: bạn dùng công thức không phù hợp.
+                    </div>
+
+                    <!-- Edit panel -->
+                    <div id="step2-edit" class="hidden mt-3">
+                      <label class="block text-xs text-slate-300 mb-1">Chỉnh nhận xét</label>
+                      <textarea id="step2-textarea" class="w-full rounded-lg bg-black/30 text-slate-100 placeholder:text-slate-500 ring-1 ring-white/10 focus:ring-2 focus:ring-blue-500 outline-none p-2" rows="3">Good! Alternative method used correctly.</textarea>
+                      <div class="mt-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                          <label class="text-xs text-slate-300">Điểm bước này</label>
+                          <input id="step2-score" type="number" min="0" max="2" step="1" value="2" class="w-16 text-center rounded-lg bg-black/30 text-slate-100 ring-1 ring-white/10 focus:ring-2 focus:ring-blue-500 outline-none p-1.5" />
+                          <span class="text-xs text-slate-500">/ 2</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <button id="step2-cancel" class="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-slate-300 transition">Hủy</button>
+                          <button id="step2-save" class="text-xs px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-500/90 text-white ring-1 ring-white/10 transition">Lưu</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Apply to group prompt -->
+                    <div id="apply-group" class="hidden mt-3 rounded-lg bg-white/5 ring-1 ring-white/10 p-3">
+                      <div class="text-xs text-slate-300">Câu trả lời này thuộc nhóm có <span id="apply-count" class="font-medium text-slate-100">8</span> bài tương tự. Áp dụng chỉnh sửa cho tất cả?</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <button id="btn-apply-all" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-emerald-500/90 hover:bg-emerald-500 text-white ring-1 ring-white/10 transition">
+                          <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                          Áp dụng cho tất cả
+                        </button>
+                        <button id="btn-apply-one" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-slate-300 transition">
+                          <i data-lucide="dot" class="w-3.5 h-3.5"></i>
+                          Chỉ bài này
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Logic approve quick action -->
+                    <div class="mt-3 pt-3 border-t border-white/10 flex items-center justify-end">
+                      <button id="btn-approve-logic" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/90 hover:bg-emerald-500 text-white ring-1 ring-white/10 transition inline-flex items-center gap-1.5">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        Duyệt logic
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Step 3 (Handwriting case) -->
+                  <div id="step3-card" class="rounded-xl bg-[#0F141C] ring-1 ring-white/10 p-3">
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-2">
+                        <span id="step3-badge" class="inline-flex items-center gap-1 text-xs text-orange-300 bg-orange-400/10 ring-1 ring-orange-400/30 px-2 py-0.5 rounded-full">
+                          <i data-lucide="highlighter" class="w-3.5 h-3.5"></i>
+                          Xác nhận chữ viết
+                        </span>
+                        <div class="text-sm text-slate-200">Bước 3: Thế số và tính</div>
+                      </div>
+                      <div id="step3-score" class="text-sm text-slate-300">? điểm</div>
+                    </div>
+                    <div id="step3-content" class="mt-2 text-xs text-slate-400">
+                      Mập mờ chữ viết tại phép tính trung gian. Nhấn vào vùng cam trên bài làm để xác nhận b/6.
+                    </div>
+
+                    <!-- AI handwriting suggestions -->
+                    <div id="hw-suggestions" class="hidden mt-3 rounded-lg bg-white/5 ring-1 ring-white/10 p-3">
+                      <div class="text-xs text-slate-300 inline-flex items-center gap-1">
+                        <i data-lucide="wand-2" class="w-3.5 h-3.5 text-blue-300"></i>
+                        Gợi ý AI: Chọn một phương án, hệ thống sẽ tự cập nhật.
+                      </div>
+                      <div class="mt-2 grid grid-cols-2 gap-2">
+                        <button data-digit="b" data-confidence="40" class="hw-option group rounded-lg ring-1 ring-white/10 bg-black/20 hover:bg-black/10 transition p-3 text-left">
+                          <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-200">Chữ b</span>
+                            <span class="text-[11px] text-slate-400">40%</span>
+                          </div>
+                          <div class="mt-2 h-1.5 rounded bg-white/10 overflow-hidden">
+                            <div class="h-full bg-orange-400/80 w-[40%]"></div>
+                          </div>
+                        </button>
+                        <button data-digit="6" data-confidence="60" class="hw-option group rounded-lg ring-1 ring-white/10 bg-black/20 hover:bg-black/10 transition p-3 text-left">
+                          <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-200">Số 6</span>
+                            <span class="text-[11px] text-slate-400">60%</span>
+                          </div>
+                          <div class="mt-2 h-1.5 rounded bg-white/10 overflow-hidden">
+                            <div class="h-full bg-emerald-400/80 w-[60%]"></div>
+                          </div>
+                        </button>
+                      </div>
+                      <p class="mt-2 text-[11px] text-slate-500">Hoặc nhấn vào vùng cam trên bài làm để xác nhận.</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Handwriting Confirmation Dialog -->
+                  <div id="handwritingDialog" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div class="bg-[#0F141C] rounded-2xl ring-1 ring-white/10 p-6 max-w-md w-full mx-4 relative">
+                      <button id="closeHandwritingDialog" class="absolute top-3 right-3 text-slate-400 hover:text-slate-200 transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                      </button>
+                      <div class="text-center">
+                        <h3 class="text-xl font-semibold text-slate-100 mb-2">Xác nhận chữ viết tay</h3>
+                        <p class="text-slate-400 mb-4">
+                          AI khó đọc số này trong bài làm. Bạn có thể xác nhận giúp?
+                        </p>
+                        
+                        <div class="bg-black/30 p-4 rounded-lg text-center mb-4">
+                          <img src="images/handwriting_sample.svg" alt="Handwriting sample" class="mx-auto h-48 mb-2">
+                          <p class="text-sm text-slate-500 mt-2">Chữ viết tay trong bài làm</p>
+                        </div>
+                        
+                        <p class="text-center font-medium text-slate-300 mb-4">Đây là chữ b hay số 6?</p>
+                        
+                        <div class="flex space-x-4 justify-center">
+                          <button 
+                            id="btn-digit-b"
+                            class="text-2xl font-mono px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl ring-1 ring-white/10 transition"
+                          >
+                            b
+                          </button>
+                          <button 
+                            id="btn-digit-6"
+                            class="text-2xl font-mono px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl ring-1 ring-white/10 transition"
+                          >
+                            6
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Step 4 -->
+                  <div class="rounded-xl bg-[#0F141C] ring-1 ring-white/10 p-3">
+                    <div class="flex items-start justify-between">
+                      <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1 text-xs text-emerald-300 bg-emerald-400/10 ring-1 ring-emerald-400/30 px-2 py-0.5 rounded-full">
+                          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                          Đúng
+                        </span>
+                        <div class="text-sm text-slate-200">Bước 4: Kết luận</div>
+                      </div>
+                      <div class="text-sm text-slate-300">3 điểm</div>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-400">Kết luận đúng, đơn vị đầy đủ.</p>
+                  </div>
+
+                  <!-- Magic message -->
+                  <div id="magic-msg" class="hidden rounded-xl bg-blue-500/10 ring-1 ring-blue-400/30 p-3">
+                    <div class="flex items-start gap-3">
+                      <i data-lucide="sparkles" class="w-5 h-5 text-blue-300 mt-0.5"></i>
+                      <div>
+                        <div class="text-sm text-blue-200">Đã cập nhật điểm tự động</div>
+                        <p class="text-xs text-blue-300/80 mt-1">Hệ thống đã cập nhật điểm và nhận xét dựa trên lựa chọn của bạn.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Final approval -->
+                  <div class="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
+                    <div class="text-xs text-slate-400">Đã hoàn thành 2/3 bước</div>
+                    <button id="btn-mark-group-done" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-500/80 hover:bg-blue-500 text-white ring-1 ring-white/10 disabled:opacity-40 disabled:pointer-events-none transition">
+                      <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                      Duyệt lần cuối
+                    </button>
+                  </div>
+                  
+                  <!-- Export Menu -->
+                  <div id="exportMenu" class="hidden absolute right-4 mt-2 w-48 rounded-xl bg-slate-800 shadow-lg ring-1 ring-white/10 py-1 z-10">
+                    <button id="btnExportPDF" class="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-white/5 transition">
+                      <i data-lucide="file-type-pdf" class="inline w-4 h-4 mr-2"></i> Xuất PDF
+                    </button>
+                    <button id="btnExportCSV" class="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-white/5 transition">
+                      <i data-lucide="file-type-csv" class="inline w-4 h-4 mr-2"></i> Xuất CSV
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen: Finalize -->
+      <section id="screen-finalize" class="hidden min-h-screen flex items-center justify-center px-6">
+        <div class="w-full max-w-2xl text-center">
+          <div class="mx-auto mb-8 w-16 h-16 rounded-2xl bg-white/5 ring-1 ring-white/10 flex items-center justify-center">
+            <i data-lucide="check-circle" class="w-7 h-7 text-emerald-400"></i>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-semibold tracking-tight text-slate-100">Đã hoàn tất chấm bài</h2>
+          <p class="mt-3 text-slate-400">Tất cả 30 bài đã được chấm và phân loại thành công.</p>
+
+          <div class="mt-8 mx-auto max-w-xl rounded-2xl bg-white/[0.03] ring-1 ring-white/10 p-5 text-left">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="file-bar-chart" class="w-5 h-5 text-slate-400"></i>
+                <span class="text-slate-300">Thống kê nhanh</span>
+              </div>
+              <span class="text-sm text-slate-400">30 bài</span>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-4">
+              <div class="rounded-xl bg-[#0F141C] ring-1 ring-white/10 p-3">
+                <div class="text-xs text-slate-400">Điểm trung bình</div>
+                <div class="mt-1 text-xl font-semibold tracking-tight text-slate-100">7.8</div>
+                <div class="mt-3 h-1.5 rounded bg-white/10 overflow-hidden">
+                  <div class="h-full bg-blue-500 w-[78%]"></div>
+                </div>
+              </div>
+              <div class="rounded-xl bg-[#0F141C] ring-1 ring-white/10 p-3">
+                <div class="text-xs text-slate-400">Tỷ lệ đạt</div>
+                <div class="mt-1 text-xl font-semibold tracking-tight text-slate-100">86%</div>
+                <div class="mt-3 h-1.5 rounded bg-white/10 overflow-hidden">
+                  <div class="h-full bg-emerald-500 w-[86%]"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 flex items-center justify-between">
+              <button class="inline-flex items-center gap-1.5 text-sm text-slate-300 hover:text-slate-100 px-3 py-2 rounded-lg hover:bg-white/5 ring-1 ring-white/10 transition">
+                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                <span>Xem chi tiết</span>
+              </button>
+              <button id="btn-export-final" class="inline-flex items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-500/90 text-white px-4 py-2.5 shadow-sm shadow-blue-900/30 ring-1 ring-white/10 transition">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Xuất kết quả (.zip)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-6 text-sm text-slate-500">Bạn có thể tạo phiên chấm mới hoặc tiếp tục chỉnh sửa phiên hiện tại.</div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      // Initialize Lucide icons
+      if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+
+      // DOM Elements
+      const screenUpload = document.getElementById('screen-upload');
+      const screenProgress = document.getElementById('screen-progress');
+      const screenDashboard = document.getElementById('screen-dashboard');
+      const screenCanvas = document.getElementById('screen-canvas');
+      const screenFinalize = document.getElementById('screen-finalize');
+
+      const btnStartUpload = document.getElementById('btn-start-upload');
+      const fileInput = document.getElementById('file-input');
+      const sessionMeta = document.getElementById('session-meta');
+      const fileCount = document.getElementById('file-count');
+      const btnChangeFiles = document.getElementById('btn-change-files');
+      const btnUploadGrade = document.getElementById('btn-upload-grade');
+      const sessionName = document.getElementById('session-name');
+
+      const progressBar = document.getElementById('progress-bar');
+      const progressCounter = document.getElementById('progress-counter');
+      const progressTotal = document.getElementById('progress-total');
+
+      const dashSession = document.getElementById('dash-session');
+      const btnExportDashboard = document.getElementById('btn-export-dashboard');
+      const btnBackDashboard = document.getElementById('btn-back-dashboard');
+      const groupBadge = document.getElementById('group-badge');
+
+      const hotspot = document.getElementById('hotspot');
+      const hotspotPopover = document.getElementById('hotspot-popover');
+      const paperImage = document.getElementById('paper-image');
+      const studentName = document.getElementById('student-name');
+      const canvasHint = document.getElementById('canvas-hint');
+
+      const step2Badge = document.getElementById('step2-badge');
+      const step2Content = document.getElementById('step2-content');
+      const step2Edit = document.getElementById('step2-edit');
+      const step2Textarea = document.getElementById('step2-textarea');
+      const step2Score = document.getElementById('step2-score');
+      const step2Cancel = document.getElementById('step2-cancel');
+      const step2Save = document.getElementById('step2-save');
+      const btnApproveLogic = document.getElementById('btn-approve-logic');
+
+      const step3Badge = document.getElementById('step3-badge');
+      const step3Content = document.getElementById('step3-content');
+      const step3Score = document.getElementById('step3-score');
+      const hwSuggestions = document.getElementById('hw-suggestions');
+
+      const applyPrompt = document.getElementById('apply-group');
+      const applyCount = document.getElementById('apply-count');
+      const btnApplyAll = document.getElementById('btn-apply-all');
+      const btnApplyOne = document.getElementById('btn-apply-one');
+
+      const magicMsg = document.getElementById('magic-msg');
+      const scoreTotal = document.getElementById('score-total');
+      const btnMarkGroupDone = document.getElementById('btn-mark-group-done');
+      const btnExportFinal = document.getElementById('btn-export-final');
+
+      // Workflow steps
+      const wfStep1 = document.getElementById('wf-step1');
+      const wfStep2 = document.getElementById('wf-step2');
+      const wfStep3 = document.getElementById('wf-step3');
+
+      // Application state
+      const state = {
+        files: [],
+        currentScreen: 'upload',
+        currentGroupId: null,
+        canvasMode: null,
+        step2Approved: false,
+        step2Edited: false,
+        step3Resolved: false,
+        finalApproved: false,
+        groups: {
+          g1: { type: 'handwriting', count: 3, status: 'attention' },
+          g2: { type: 'logic', count: 8, status: 'review' },
+          g3: { type: 'logic', count: 4, status: 'review' },
+          g4: { type: 'ready', count: 12, status: 'ready' },
+          g5: { type: 'ready', count: 1, status: 'ready' },
+          g6: { type: 'ready', count: 2, status: 'ready' }
+        }
+      };
+
+      // Helper functions
+      function showScreen(screenName) {
+        screenUpload.classList.add('hidden');
+        screenProgress.classList.add('hidden');
+        screenDashboard.classList.add('hidden');
+        screenCanvas.classList.add('hidden');
+        screenFinalize.classList.add('hidden');
+
+        switch (screenName) {
+          case 'upload':
+            screenUpload.classList.remove('hidden');
+            break;
+          case 'progress':
+            screenProgress.classList.remove('hidden');
+            break;
+          case 'dashboard':
+            screenDashboard.classList.remove('hidden');
+            break;
+          case 'canvas':
+            screenCanvas.classList.remove('hidden');
+            break;
+          case 'finalize':
+            screenFinalize.classList.remove('hidden');
+            break;
+        }
+
+        state.currentScreen = screenName;
+      }
+
+      function showToast(message) {
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-100 px-4 py-2 rounded-lg shadow-lg z-50 text-sm';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+          setTimeout(() => toast.remove(), 300);
+        }, 2000);
+      }
+
+      function renderGroupBadge(type, status, count) {
+        let bgClass = '';
+        let textClass = '';
+        let icon = '';
+        let label = '';
+
+        if (type === 'handwriting' && status === 'attention') {
+          bgClass = 'bg-orange-400/10';
+          textClass = 'text-orange-300';
+          icon = '<i data-lucide="highlighter" class="w-3.5 h-3.5"></i>';
+          label = 'Cần xác nhận chữ viết';
+        } else if (type === 'logic' && status === 'review') {
+          bgClass = 'bg-amber-400/10';
+          textClass = 'text-amber-300';
+          icon = '<i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>';
+          label = 'Cần bạn xem lại';
+        } else if (status === 'ready') {
+          bgClass = 'bg-emerald-400/10';
+          textClass = 'text-emerald-300';
+          icon = '<i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>';
+          label = 'Đã sẵn sàng';
+        }
+
+        groupBadge.className = `inline-flex items-center gap-1.5 text-xs ${textClass} ${bgClass} ring-1 ring-${textClass.replace('text-', '')}/30 px-2.5 py-1 rounded-full`;
+        groupBadge.innerHTML = `${icon} ${label} • ${count} bài`;
+
+        if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+      }
+
+      function updateWorkflowUI() {
+        // Reset all steps
+        wfStep1.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-white/15 bg-white/5 text-slate-300 flex items-center justify-center text-xs font-medium';
+        wfStep2.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-white/15 bg-white/5 text-slate-300 flex items-center justify-center text-xs font-medium';
+        wfStep3.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-white/15 bg-white/5 text-slate-300 flex items-center justify-center text-xs font-medium';
+
+        // Update based on state
+        if (state.canvasMode === 'handwriting') {
+          if (!state.step3Resolved) {
+            wfStep1.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-orange-400/30 bg-orange-400/10 text-orange-300 flex items-center justify-center text-xs font-medium';
+            btnMarkGroupDone.disabled = true;
+          } else if (!state.step2Approved) {
+            wfStep1.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+            wfStep2.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-amber-400/30 bg-amber-400/10 text-amber-300 flex items-center justify-center text-xs font-medium';
+            btnMarkGroupDone.disabled = true;
+          } else {
+            wfStep1.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+            wfStep2.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+            wfStep3.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-blue-400/30 bg-blue-400/10 text-blue-300 flex items-center justify-center text-xs font-medium';
+            btnMarkGroupDone.disabled = false;
+          }
+        } else if (state.canvasMode === 'logic') {
+          if (!state.step2Approved) {
+            wfStep1.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+            wfStep2.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-amber-400/30 bg-amber-400/10 text-amber-300 flex items-center justify-center text-xs font-medium';
+            btnMarkGroupDone.disabled = true;
+          } else {
+            wfStep1.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+            wfStep2.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+            wfStep3.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-blue-400/30 bg-blue-400/10 text-blue-300 flex items-center justify-center text-xs font-medium';
+            btnMarkGroupDone.disabled = false;
+          }
+        } else if (state.canvasMode === 'ready') {
+          wfStep1.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+          wfStep2.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+          wfStep3.querySelector('div:first-child').className = 'w-7 h-7 rounded-full ring-1 ring-emerald-400/30 bg-emerald-400/10 text-emerald-300 flex items-center justify-center text-xs font-medium';
+          btnMarkGroupDone.disabled = false;
+        }
+      }
+
+      function updateExportAvailability() {
+        const allReady = Object.values(state.groups).every(g => g.status === 'ready');
+        btnExportDashboard.disabled = !allReady;
+        if (allReady) {
+          btnExportDashboard.classList.remove('bg-blue-500/60');
+          btnExportDashboard.classList.add('bg-blue-500');
+        } else {
+          btnExportDashboard.classList.add('bg-blue-500/60');
+          btnExportDashboard.classList.remove('bg-blue-500');
+        }
+      }
+
+      // Event listeners
+      btnStartUpload.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          state.files = Array.from(e.target.files);
+          fileCount.textContent = `Đã chọn ${state.files.length} tệp`;
+          sessionMeta.classList.remove('hidden');
+        }
+      });
+
+      btnChangeFiles.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      btnUploadGrade.addEventListener('click', () => {
+        if (state.files.length === 0) return;
+
+        const name = sessionName.value.trim() || 'Phiên chấm mới';
+        dashSession.textContent = name;
+
+        showScreen('progress');
+        progressTotal.textContent = state.files.length.toString();
+
+        // Simulate progress
+        let count = 0;
+        const interval = setInterval(() => {
+          count++;
+          progressCounter.textContent = count.toString();
+          progressBar.style.width = `${(count / state.files.length) * 100}%`;
+
+          if (count >= state.files.length) {
+            clearInterval(interval);
+            setTimeout(() => showScreen('dashboard'), 500);
+          }
+        }, 100);
+      });
+
+      // Group card click handlers
+      document.querySelectorAll('.group-card').forEach((card) => {
+        card.addEventListener('click', () => {
+          const groupId = card.dataset.groupId;
+          const groupType = card.dataset.type;
+          const groupCount = parseInt(card.dataset.count, 10);
+          const groupStatus = card.dataset.status;
+
+          state.currentGroupId = groupId;
+          state.canvasMode = groupType;
+          state.step2Approved = groupStatus === 'ready';
+          state.step3Resolved = groupType !== 'handwriting' || groupStatus === 'ready';
+
+          renderGroupBadge(groupType, groupStatus, groupCount);
+          showScreen('canvas');
+
+          // Show/hide elements based on group type
+          if (groupType === 'handwriting') {
+            hotspot.classList.remove('hidden');
+            hwSuggestions.classList.remove('hidden');
+            canvasHint.textContent = 'Gợi ý: Nhấn vùng cam để xác nhận chữ viết';
+          } else {
+            hotspot.classList.add('hidden');
+            hwSuggestions.classList.add('hidden');
+            if (groupType === 'logic') {
+              canvasHint.textContent = 'Gợi ý: Kiểm tra logic và duyệt nếu phù hợp';
+            } else {
+              canvasHint.textContent = 'Bài làm đã được duyệt';
+            }
+          }
+
+          updateWorkflowUI();
+        });
+      });
+
+      btnBackDashboard.addEventListener('click', () => {
+        showScreen('dashboard');
+      });
+
+      // Hotspot interactions
+      hotspot.addEventListener('click', () => {
+        // Show the handwriting dialog instead of the popover
+        document.getElementById('handwritingDialog').classList.remove('hidden');
+      });
+
+      // Handle digit choice
+      function handleDigitChoice(digit) {
+        // Hide both the popover and the dialog
+        hotspotPopover.classList.add('hidden');
+        hwSuggestions.classList.add('hidden');
+        hotspot.classList.add('hidden');
+        document.getElementById('handwritingDialog').classList.add('hidden');
+        state.step3Resolved = true;
+
+        if (digit === 'b') {
+          // If b -> mark as correct
+          step3Badge.className = 'inline-flex items-center gap-1 text-xs text-emerald-300 bg-emerald-400/10 ring-1 ring-emerald-400/30 px-2 py-0.5 rounded-full';
+          step3Badge.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> Đúng';
+          step3Content.textContent = 'Đã xác nhận là chữ b. Phép tính chính xác.';
+          step3Score.textContent = '2 điểm';
+          scoreTotal.textContent = '9 / 10';
+          magicMsg.classList.remove('hidden');
+          canvasHint.textContent = 'Tiếp tục kiểm tra logic, sau đó duyệt lần cuối.';
+        } else {
+          // If 6 -> keep as incorrect example
+          step3Badge.className = 'inline-flex items-center gap-1 text-xs text-rose-300 bg-rose-400/10 ring-1 ring-rose-400/30 px-2 py-0.5 rounded-full';
+          step3Badge.innerHTML = '<i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Sai';
+          step3Content.textContent = 'Xác nhận là số 6. Có sai lệch phép tính tại bước này.';
+          step3Score.textContent = '0 điểm';
+          scoreTotal.textContent = '7 / 10';
+          magicMsg.classList.remove('hidden');
+        }
+        updateWorkflowUI();
+        if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+      }
+
+      // Digit choice (popover)
+      document.querySelectorAll('.choice-digit').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const choice = e.currentTarget.dataset.choice;
+          handleDigitChoice(choice);
+        });
+      });
+      
+      // Handwriting dialog digit buttons
+      document.getElementById('btn-digit-b').addEventListener('click', () => {
+        handleDigitChoice('b');
+      });
+      
+      document.getElementById('btn-digit-6').addEventListener('click', () => {
+        handleDigitChoice('6');
+      });
+
+      // Function to show handwriting dialog
+      function showHandwritingDialog() {
+        document.getElementById('handwritingDialog').classList.remove('hidden');
+      }
+      
+      // Function to close handwriting dialog
+      function closeHandwritingDialog() {
+        document.getElementById('handwritingDialog').classList.add('hidden');
+      }
+      
+      // Close dialog when clicking the X button
+      document.getElementById('closeHandwritingDialog').addEventListener('click', closeHandwritingDialog);
+      
+      // Close dialog when clicking outside the dialog content
+      document.getElementById('handwritingDialog').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('handwritingDialog')) {
+          closeHandwritingDialog();
+        }
+      });
+      
+      // AI suggestion options
+      document.querySelectorAll('.hw-option').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const digit = e.currentTarget.dataset.digit;
+          handleDigitChoice(digit);
+          showToast('Đã xác nhận chữ viết: ' + digit);
+        });
+      });
+      
+      // Add button to show handwriting dialog from AI suggestions
+      const showDialogBtn = document.createElement('button');
+      showDialogBtn.className = 'mt-2 text-xs text-blue-400 hover:text-blue-300 transition';
+      showDialogBtn.textContent = 'Xem đầy đủ trong hộp thoại';
+      showDialogBtn.addEventListener('click', showHandwritingDialog);
+      document.getElementById('hw-suggestions').appendChild(showDialogBtn);
+      
+      // Add click event to step3 card to show handwriting dialog
+      document.getElementById('step3-card').addEventListener('click', (e) => {
+        // Only trigger if we're clicking the card itself or the badge, not child elements with their own handlers
+        if (e.target.id === 'step3-card' || e.target.id === 'step3-badge' || 
+            e.target.closest('#step3-badge') || e.target.closest('#step3-content')) {
+          if (!state.step3Resolved && state.canvasMode === 'handwriting') {
+            showHandwritingDialog();
+          }
+        }
+      });
+      
+      // Make the step3 card look clickable when in handwriting mode
+      if (state.canvasMode === 'handwriting' && !state.step3Resolved) {
+        document.getElementById('step3-card').classList.add('cursor-pointer', 'hover:bg-[#161C26]', 'transition');
+      }
+
+      // Step 2 menu -> open edit panel
+      document.getElementById('step2-menu').addEventListener('click', () => {
+        step2Edit.classList.remove('hidden');
+        step2Content.classList.add('hidden');
+      });
+
+      step2Cancel.addEventListener('click', () => {
+        step2Edit.classList.add('hidden');
+        step2Content.classList.remove('hidden');
+      });
+
+      function approveLogicFlow(showApplyPrompt = false) {
+        step2Badge.className = 'inline-flex items-center gap-1 text-xs text-emerald-300 bg-emerald-400/10 ring-1 ring-emerald-400/30 px-2 py-0.5 rounded-full';
+        step2Badge.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i> Duyệt';
+        state.step2Approved = true;
+        updateWorkflowUI();
+        if (state.canvasMode === 'logic' && showApplyPrompt) {
+          applyPrompt.classList.remove('hidden');
+        }
+        if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+      }
+
+      step2Save.addEventListener('click', () => {
+        const txt = step2Textarea.value.trim() || 'Đã điều chỉnh.';
+        step2Content.textContent = txt;
+        step2Edit.classList.add('hidden');
+        step2Content.classList.remove('hidden');
+        state.step2Edited = true;
+        const s2 = parseInt(step2Score.value || '2', 10);
+        const base = state.canvasMode === 'handwriting' ? (state.step3Resolved ? 9 : 7) : (state.canvasMode === 'ready' ? 10 : 8);
+        const adjusted = Math.min(10, Math.max(0, base)); // simplified
+        scoreTotal.textContent = adjusted + ' / 10';
+        approveLogicFlow(true);
+        showToast('Đã lưu chỉnh sửa');
+      });
+
+      btnApproveLogic.addEventListener('click', () => {
+        approveLogicFlow(true);
+        showToast('Đã duyệt logic');
+      });
+
+      // Apply to group actions
+      btnApplyAll.addEventListener('click', () => {
+        const gid = state.currentGroupId;
+        state.groups[gid].status = 'ready';
+        renderGroupBadge('ready', 'ready', state.groups[gid].count);
+        applyPrompt.classList.add('hidden');
+        showToast('Đã áp dụng cho toàn bộ nhóm');
+        updateExportAvailability();
+        updateWorkflowUI();
+      });
+
+      btnApplyOne.addEventListener('click', () => {
+        applyPrompt.classList.add('hidden');
+        showToast('Đã áp dụng cho bài này');
+      });
+
+      // Mark group as done
+      const btnMarkDone = document.getElementById('btn-mark-group-done');
+      btnMarkDone.addEventListener('click', () => {
+        const gid = state.currentGroupId;
+        state.groups[gid].status = 'done';
+        renderGroupBadge('done', 'done', state.groups[gid].count);
+        showToast('Đã đánh dấu hoàn thành');
+        updateExportAvailability();
+      });
+
+      // Export actions
+      const btnExport = document.getElementById('btn-export-final');
+      btnExport.addEventListener('click', () => {
+        exportMenu.classList.toggle('hidden');
+      });
+
+      btnExportPDF.addEventListener('click', () => {
+        exportMenu.classList.add('hidden');
+        showToast('Đang tạo PDF...');
+        setTimeout(() => {
+          showToast('Đã tạo PDF thành công', 'success');
+        }, 1500);
+      });
+
+      btnExportCSV.addEventListener('click', () => {
+        exportMenu.classList.add('hidden');
+        showToast('Đang xuất CSV...');
+        setTimeout(() => {
+          showToast('Đã xuất CSV thành công', 'success');
+        }, 1500);
+      });
+
+      // Initialize UI
+      updateWorkflowUI();
+      if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+    </script>
+  </body>
+</html>
